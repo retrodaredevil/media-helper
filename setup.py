@@ -8,5 +8,6 @@ setup(
     author_email="retrodaredevil@gmail.com",
     description="Simple mp3 helper script",
     url="https://github.com/retrodaredevil/mp3-helper",
-    entry_points={"console_scripts": ["mp3-helper = mp3_helper:main"]}
+    entry_points={"console_scripts": ["mp3-helper = mp3_helper:main"]},
+    install_requires=["eyed3"]
 )

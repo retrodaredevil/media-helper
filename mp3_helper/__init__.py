@@ -17,7 +17,7 @@ def real_main():
             except ValueError:
                 pass
 
-            audio_file = eyed3.load("song.mp3")
+            audio_file = eyed3.load(file)
             # audio_file.tag.artist = ""
             audio_file.tag.album = album_name
             audio_file.tag.album_artist = artist_name

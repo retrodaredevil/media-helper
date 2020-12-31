@@ -75,7 +75,7 @@ def get_file_iter(files: Optional[List[str]], recursive: bool) -> Iterator[Path]
             path = Path(file)
             if path.is_dir():
                 if recursive:
-                    yield from generator_function([path])
+                    yield from generator_function(path.iterdir())
             else:
                 yield path
 
@@ -95,20 +95,28 @@ def tv_rename_main(args: List[str]) -> int:
 
     def find_number(indicators: List[str], text: str) -> Optional[int]:
         for indicator in indicators:
-            index = text.find(indicator)
-            if index < 0:
-                continue
-            start_index = index + len(indicator)
-            sub = text[start_index:] + " "  # add an extra space here to prevent index error in code below
-            while sub.startswith(" "):
-                sub = sub[1:]
-            number_text = sub[0]
-            while sub[len(number_text)].isdigit():
-                number_text += sub[len(number_text)]
-            try:
-                return int(number_text)
-            except ValueError:
-                pass
+            sub_text = text
+            while True:
+                index = sub_text.find(indicator)
+                if index < 0:
+                    break
+
+                start_index = index + len(indicator)
+                sub = sub_text[start_index:] + "a"  # add random character to prevent index error in code below
+                sub_text = sub_text[index + 1:]  # the new sub_text for next iteration
+                while sub.startswith(" "):
+                    sub = sub[1:]
+                number_text = sub[0]
+                while True:
+                    try_index = len(number_text)
+                    if try_index < len(sub) and sub[try_index].isdigit():
+                        number_text += sub[try_index]
+                    else:
+                        break
+                try:
+                    return int(number_text)
+                except ValueError:
+                    pass
         return None
     args = parser.parse_args()
     all_season = args.season
@@ -136,7 +144,7 @@ def tv_rename_main(args: List[str]) -> int:
             if test:
                 print("{} will be renamed to {}".format(name, new_name))
             else:
-                new_file = Path(new_name)
+                new_file = Path(file.parent, new_name)
                 if new_file.exists() and not allow_overwrite:
                     print("new file exists! new name: " + new_name + " old name: " + name)
                     return 1

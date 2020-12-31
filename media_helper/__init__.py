@@ -144,7 +144,7 @@ def tv_rename_main(args: List[str]) -> int:
                 print("Couldn't find episode in file name: " + name)
                 return 1
             episode += episode_start - 1
-            new_name = "S{:02d}E{:02d}.{}".format(season, episode, file_extension)
+            new_name = "s{:02d}e{:02d}.{}".format(season, episode, file_extension)
             if test:
                 print("{} will be renamed to {}".format(name, new_name))
             else:

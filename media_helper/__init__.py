@@ -106,11 +106,13 @@ def tv_rename_main(args: List[str]) -> int:
     def find_number(indicators: List[str], text: str) -> Optional[Tuple[int, int, int]]:
         for indicator in indicators:
             sub_text = text
-            for iteration_number in count():
+
+            while True:
                 index = sub_text.find(indicator)
                 if index < 0:
                     break
 
+                shaved_length = len(text) - len(sub_text)
                 start_index = index + len(indicator)
                 sub = sub_text[start_index:] + "a"  # add random character to prevent index error in code below
                 sub_text = sub_text[index + 1:]  # the new sub_text for next iteration
@@ -127,7 +129,7 @@ def tv_rename_main(args: List[str]) -> int:
                         break
                 counter += len(number_text)
                 try:
-                    return int(number_text), iteration_number + index, iteration_number + start_index + counter
+                    return int(number_text), shaved_length + index, shaved_length + start_index + counter
                 except ValueError:
                     pass
         return None

@@ -1,10 +1,13 @@
 from argparse import ArgumentParser
+from itertools import count
 from pathlib import Path
 
 import eyed3
 import sys
 
-from typing import Callable, List, Optional, Iterator
+from typing import Callable, List, Optional, Iterator, Tuple
+
+SEPARATOR = "–"  # Note that this character is not a dash
 
 
 def __do_func(func: Callable[[List[str]], int]) -> None:
@@ -92,11 +95,18 @@ def tv_rename_main(args: List[str]) -> int:
                         help="Use if you want to overwrite files when there's a conflicting file name")
     parser.add_argument("--test", action="store_true",
                         help="Use to see what files will be renamed to before actually doing it")
+    parser.add_argument("--upper", action="store_true", help="If set, uses S00E00.ext format instead of s00e00.ext")
+    parser.add_argument("--lower", action="store_true",
+                        help="If set, uses s00e00.ext format instead of S00E00.ext. Has affect if --jelly is set")
+    parser.add_argument("--jelly", action="store_true", help="Makes output match Jellyfin recommendations")
+    parser.add_argument("--auto-show-name", action="store_true", help="Tries to guess show name")
+    parser.add_argument("--auto-episode-name", action="store_true", help="Tries to guess episode name")
+    parser.add_argument("--show-name", type=str, default=None)
 
-    def find_number(indicators: List[str], text: str) -> Optional[int]:
+    def find_number(indicators: List[str], text: str) -> Optional[Tuple[int, int, int]]:
         for indicator in indicators:
             sub_text = text
-            while True:
+            for iteration_number in count():
                 index = sub_text.find(indicator)
                 if index < 0:
                     break
@@ -104,8 +114,10 @@ def tv_rename_main(args: List[str]) -> int:
                 start_index = index + len(indicator)
                 sub = sub_text[start_index:] + "a"  # add random character to prevent index error in code below
                 sub_text = sub_text[index + 1:]  # the new sub_text for next iteration
+                counter = 0
                 while sub.startswith(" "):
                     sub = sub[1:]
+                    counter += 1
                 number_text = sub[0]
                 while True:
                     try_index = len(number_text)
@@ -113,8 +125,9 @@ def tv_rename_main(args: List[str]) -> int:
                         number_text += sub[try_index]
                     else:
                         break
+                counter += len(number_text)
                 try:
-                    return int(number_text)
+                    return int(number_text), iteration_number + index, iteration_number + start_index + counter
                 except ValueError:
                     pass
         return None
@@ -123,6 +136,16 @@ def tv_rename_main(args: List[str]) -> int:
     test = args.test
     allow_overwrite = args.allow_overwrite
     episode_start = args.episode_start
+    upper = args.upper
+    jelly = args.jelly
+    if jelly:
+        upper = True
+    if args.lower:
+        if args.upper:
+            print("--lower and --upper cannot be set at same time.")
+            return 1
+        upper = False
+    season_letter, episode_letter = ("S", "E") if upper else ("s", "e")
     for file in get_file_iter(args.files, args.r):
         if not file.is_dir():
             name = file.name
@@ -131,20 +154,47 @@ def tv_rename_main(args: List[str]) -> int:
                 partial_name = name
             else:
                 partial_name = name[0:-len(file_extension) - 1]
+
+            season_tuple = find_number(["season", "s"], partial_name.lower())
+            season, season_start_index, season_end_index = None, None, None
+            if season_tuple is not None:
+                season, season_start_index, season_end_index = season_tuple
             if all_season is None:
-                season = find_number(["season", "s"], partial_name.lower())
-                if season is None:
+                if season_tuple is None:
                     print("Couldn't find season in file name: " + name)
                     return 1
+                assert season is not None
+                assert season_start_index is not None
+                assert season_end_index is not None
             else:
                 season = all_season
 
-            episode = find_number(["episode", "e"], partial_name.lower())
-            if episode is None:
+            episode_tuple = find_number(["episode", "e"], partial_name.lower())
+            if episode_tuple is None:
                 print("Couldn't find episode in file name: " + name)
                 return 1
+            episode, episode_start_index, episode_end_index = episode_tuple
             episode += episode_start - 1
-            new_name = "s{:02d}e{:02d}.{}".format(season, episode, file_extension)
+            prefix = ""
+            suffix = ""
+            if jelly:
+                prefix = "Episode "
+            else:
+                if args.auto_episode_name:
+                    last = episode_end_index if season_end_index is None else max(episode_end_index, season_end_index)
+                    ending = partial_name[last + 1:]
+                    if ending:
+                        suffix = " {} {}".format(SEPARATOR, ending.strip())
+
+                if args.show_name is not None:
+                    prefix = "{} {} ".format(args.show_name, SEPARATOR)
+                elif args.auto_show_name:
+                    index = episode_start_index if season_start_index is None else min(season_start_index, episode_start_index)
+                    starting = partial_name[0:index]
+                    if starting:
+                        prefix = "{} {} ".format(starting.strip(), SEPARATOR)
+            new_name = "{}{}{:02d}{}{:02d}{}.{}"
+            new_name = new_name.format(prefix, season_letter, season, episode_letter, episode, suffix, file_extension)
             if test:
                 print("{} will be renamed to {}".format(name, new_name))
             else:

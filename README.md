@@ -1,5 +1,7 @@
 # Media Helper
-A collection of scripts to help with metadata and file renaming
+A collection of scripts to help with metadata and file renaming. Very useful for Plex to match
+[Plex's naming conventions](https://support.plex.tv/articles/naming-and-organizing-your-tv-show-files/) or
+[Jellyfin's naming conventions](https://jellyfin.org/docs/general/server/media/shows.html).
 
 ## Quick installation
 ```shell script
@@ -7,7 +9,7 @@ sudo python3 -m pip install git+git://github.com/retrodaredevil/media-helper.git
 ```
 
 ## Using `tv-rename`
-Renames files in a directory to match the S00E00.ext format
+Renames files in a directory to match the s00e00.ext format
 
 Usage:
 ```shell

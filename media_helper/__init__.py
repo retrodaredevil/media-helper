@@ -8,6 +8,7 @@ import sys
 from typing import Callable, List, Optional, Iterator, Tuple
 
 SEPARATOR = "–"  # Note that this character is not a dash
+SEPARATORS = ["–", "-"]
 
 
 def __do_func(func: Callable[[List[str]], int]) -> None:
@@ -83,6 +84,18 @@ def get_file_iter(files: Optional[List[str]], recursive: bool) -> Iterator[Path]
                 yield path
 
     yield from generator_function(files)
+
+
+def trim(text: str) -> str:
+    text = text.strip()
+
+    while any(text.startswith(separator) for separator in SEPARATORS):
+        text = text[1:]
+
+    while any(text.endswith(separator) for separator in SEPARATORS):
+        text = text[:-1]
+
+    return text.strip()
 
 
 def tv_rename_main(args: List[str]) -> int:
@@ -189,7 +202,7 @@ def tv_rename_main(args: List[str]) -> int:
                     if args.auto_episode_ignore_after:
                         ending = ending.split(args.auto_episode_ignore_after)[0]
                     if ending:
-                        suffix = " {} {}".format(SEPARATOR, ending.strip())
+                        suffix = " {} {}".format(SEPARATOR, trim(ending))
 
                 if args.show_name is not None:
                     prefix = "{} {} ".format(args.show_name, SEPARATOR)
@@ -197,7 +210,7 @@ def tv_rename_main(args: List[str]) -> int:
                     index = episode_start_index if season_start_index is None else min(season_start_index, episode_start_index)
                     starting = partial_name[0:index]
                     if starting:
-                        prefix = "{} {} ".format(starting.strip(), SEPARATOR)
+                        prefix = "{} {} ".format(trim(starting), SEPARATOR)
             new_name = "{}{}{:02d}{}{:02d}{}.{}"
             new_name = new_name.format(prefix, season_letter, season, episode_letter, episode, suffix, file_extension)
             if test:

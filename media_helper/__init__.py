@@ -127,28 +127,33 @@ def tv_rename_main(args: List[str]) -> int:
         if not file.is_dir():
             name = file.name
             file_extension = name.split(".")[-1]
+            if file_extension == name:
+                partial_name = name
+            else:
+                partial_name = name[0:-len(file_extension) - 1]
             if all_season is None:
-                season = find_number(["season", "s"], name.lower())
+                season = find_number(["season", "s"], partial_name.lower())
                 if season is None:
                     print("Couldn't find season in file name: " + name)
                     return 1
             else:
                 season = all_season
 
-            episode = find_number(["episode", "e"], name.lower())
+            episode = find_number(["episode", "e"], partial_name.lower())
             if episode is None:
                 print("Couldn't find episode in file name: " + name)
                 return 1
             episode += episode_start - 1
-            new_name = "S{}E{}.{}".format(season, episode, file_extension)
+            new_name = "S{:02d}E{:02d}.{}".format(season, episode, file_extension)
             if test:
                 print("{} will be renamed to {}".format(name, new_name))
             else:
                 new_file = Path(file.parent, new_name)
-                if new_file.exists() and not allow_overwrite:
-                    print("new file exists! new name: " + new_name + " old name: " + name)
-                    return 1
-                file.rename(new_file)
+                if new_file != file:  # if it's the same file, don't do anything
+                    if new_file.exists() and not allow_overwrite:
+                        print("new file exists! new name: " + new_name + " old name: " + name)
+                        return 1
+                    file.rename(new_file)
 
     return 0
 

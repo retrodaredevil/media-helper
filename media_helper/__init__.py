@@ -101,6 +101,7 @@ def tv_rename_main(args: List[str]) -> int:
     parser.add_argument("--jelly", action="store_true", help="Makes output match Jellyfin recommendations")
     parser.add_argument("--auto-show-name", action="store_true", help="Tries to guess show name")
     parser.add_argument("--auto-episode-name", action="store_true", help="Tries to guess episode name")
+    parser.add_argument("--auto-episode-ignore-after", type=str, default=None)
     parser.add_argument("--show-name", type=str, default=None)
 
     def find_number(indicators: List[str], text: str) -> Optional[Tuple[int, int, int]]:
@@ -108,14 +109,14 @@ def tv_rename_main(args: List[str]) -> int:
             sub_text = text
 
             while True:
-                index = sub_text.find(indicator)
-                if index < 0:
+                indicator_start_index = sub_text.find(indicator)
+                if indicator_start_index < 0:
                     break
 
                 shaved_length = len(text) - len(sub_text)
-                start_index = index + len(indicator)
-                sub = sub_text[start_index:] + "a"  # add random character to prevent index error in code below
-                sub_text = sub_text[index + 1:]  # the new sub_text for next iteration
+                number_start_index = indicator_start_index + len(indicator)
+                sub = sub_text[number_start_index:] + "a"  # add random character to prevent index error in code below
+                sub_text = sub_text[indicator_start_index + 1:]  # the new sub_text for next iteration
                 counter = 0
                 while sub.startswith(" "):
                     sub = sub[1:]
@@ -129,7 +130,7 @@ def tv_rename_main(args: List[str]) -> int:
                         break
                 counter += len(number_text)
                 try:
-                    return int(number_text), shaved_length + index, shaved_length + start_index + counter
+                    return int(number_text), shaved_length + indicator_start_index, shaved_length + number_start_index + counter
                 except ValueError:
                     pass
         return None
@@ -185,6 +186,8 @@ def tv_rename_main(args: List[str]) -> int:
                 if args.auto_episode_name:
                     last = episode_end_index if season_end_index is None else max(episode_end_index, season_end_index)
                     ending = partial_name[last + 1:]
+                    if args.auto_episode_ignore_after:
+                        ending = ending.split(args.auto_episode_ignore_after)[0]
                     if ending:
                         suffix = " {} {}".format(SEPARATOR, ending.strip())
 

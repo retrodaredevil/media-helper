@@ -38,3 +38,6 @@ Also, this command is useful for removing the "Season 01" part:
 ```
 for filename in *.mp4; do [ -f "$filename" ] || continue; mv "$filename" "${filename//Season 01 /}"; done
 ```
+
+### Naming music files
+Use [this site](https://musicbrainz.org/search) to make sure you name your files well. This site is especially useful for songs in other languages.

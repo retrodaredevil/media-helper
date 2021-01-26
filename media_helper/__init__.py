@@ -147,7 +147,7 @@ def tv_rename_main(args: List[str]) -> int:
                 except ValueError:
                     pass
         return None
-    args = parser.parse_args()
+    args = parser.parse_args(args)
     all_season = args.season
     test = args.test
     allow_overwrite = args.allow_overwrite
@@ -169,7 +169,7 @@ def tv_rename_main(args: List[str]) -> int:
             if file_extension == name:
                 partial_name = name
             else:
-                partial_name = name[0:-len(file_extension) - 1]
+                partial_name = name[:-len(file_extension) - 1]
 
             season_tuple = find_number(["season", "s"], partial_name.lower())
             season, season_start_index, season_end_index = None, None, None
@@ -208,7 +208,7 @@ def tv_rename_main(args: List[str]) -> int:
                     prefix = "{} {} ".format(args.show_name, SEPARATOR)
                 elif args.auto_show_name:
                     index = episode_start_index if season_start_index is None else min(season_start_index, episode_start_index)
-                    starting = partial_name[0:index]
+                    starting = partial_name[:index]
                     if starting:
                         prefix = "{} {} ".format(trim(starting), SEPARATOR)
             new_name = "{}{}{:02d}{}{:02d}{}.{}"

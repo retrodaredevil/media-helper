@@ -98,6 +98,16 @@ def trim(text: str) -> str:
     return text.strip()
 
 
+def get_extra_info(name: str) -> List[str]:
+    r = []
+    for part in name.split("["):
+        split = part.split("]")
+        if len(split) >= 2:
+            r.append(split[0])
+
+    return r
+
+
 def tv_rename_main(args: List[str]) -> int:
     parser = ArgumentParser()
     parser.add_argument("files", type=str, nargs="*", help="The files to rename", default=None)
@@ -116,6 +126,7 @@ def tv_rename_main(args: List[str]) -> int:
     parser.add_argument("--auto-episode-name", action="store_true", help="Tries to guess episode name")
     parser.add_argument("--auto-episode-ignore-after", type=str, default=None)
     parser.add_argument("--show-name", type=str, default=None)
+    parser.add_argument("--keep-extra", action="store_true", help="Keeps the extra info such as [1080p] in the name")
 
     def find_number(indicators: List[str], text: str) -> Optional[Tuple[int, int, int]]:
         for indicator in indicators:
@@ -154,6 +165,7 @@ def tv_rename_main(args: List[str]) -> int:
     episode_start = args.episode_start
     upper = args.upper
     jelly = args.jelly
+    keep_extra = args.keep_extra
     if jelly:
         upper = True
     if args.lower:
@@ -185,7 +197,7 @@ def tv_rename_main(args: List[str]) -> int:
             else:
                 season = all_season
 
-            episode_tuple = find_number(["episode", "e"], partial_name.lower())
+            episode_tuple = find_number(["episode", "e", " - "], partial_name.lower())
             if episode_tuple is None:
                 print("Couldn't find episode in file name: " + name)
                 return 1
@@ -193,6 +205,7 @@ def tv_rename_main(args: List[str]) -> int:
             episode += episode_start - 1
             prefix = ""
             suffix = ""
+            extra_info_suffix = ""
             if jelly:
                 prefix = "Episode "
             else:
@@ -211,8 +224,11 @@ def tv_rename_main(args: List[str]) -> int:
                     starting = partial_name[:index]
                     if starting:
                         prefix = "{} {} ".format(trim(starting), SEPARATOR)
-            new_name = "{}{}{:02d}{}{:02d}{}.{}"
-            new_name = new_name.format(prefix, season_letter, season, episode_letter, episode, suffix, file_extension)
+            if keep_extra:
+                for extra_info in get_extra_info(partial_name):
+                    extra_info_suffix += f" [{extra_info}]"
+            new_name = "{}{}{:02d}{}{:02d}{}{}.{}"
+            new_name = new_name.format(prefix, season_letter, season, episode_letter, episode, suffix, extra_info_suffix, file_extension)
             if test:
                 print("{} will be renamed to {}".format(name, new_name))
             else:
